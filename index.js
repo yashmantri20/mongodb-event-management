@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const userRouter = require('./app/routes/UserRoute');
+const eventRouter = require('./app/routes/EventRoute');
+
 
 const port = process.env.PORT || 5000;
 
@@ -22,6 +24,8 @@ mongoose
     });
 
 app.use('/user', userRouter);
+
+app.use('/event', eventRouter);
 
 
 app.listen(port, () => {

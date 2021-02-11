@@ -63,7 +63,7 @@ module.exports.validResetPasswordInput = (email) => {
 
     const { value, error } = userSchema.validate({ email }, { abortEarly: false })
     if (error) {
-        errors = error.details.message;
+        errors = error.details.map(e => e.message)
         return errors
     }
     else {
@@ -81,7 +81,7 @@ module.exports.validChangePasswordInput = (newPassword) => {
 
     const { value, error } = userSchema.validate({ newPassword }, { abortEarly: false })
     if (error) {
-        errors = error.details.message;
+        errors = error.details.map(e => e.message)
         return errors
     }
     else {
@@ -89,3 +89,5 @@ module.exports.validChangePasswordInput = (newPassword) => {
         return errors
     }
 }
+
+

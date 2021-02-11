@@ -25,7 +25,16 @@ var userSchema = new Schema({
     resetPasswordExpires: {
         type: String,
         default: "",
-    }
+    },
+
+    eventsCreated: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Event"
+        }
+    ],
+
+    eventsInvited: [{}]
 }, {
     timestamps: true,
 });

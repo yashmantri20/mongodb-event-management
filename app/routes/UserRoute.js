@@ -1,5 +1,5 @@
 const express = require('express');
-const { validRegiterInput, validLoginInput, validChangePasswordInput, validResetPasswordInput } = require('../../Validation');
+const { validRegiterInput, validLoginInput, validChangePasswordInput, validResetPasswordInput } = require('../../UserValidation');
 const { validateToken } = require('../../auth');
 
 const bcrypt = require('bcryptjs');
@@ -32,24 +32,23 @@ users
     .route('/register')
     .post(async (req, res) => {
         let { username, email, password } = req.body;
+
         const err = validRegiterInput(username, email, password);
-        if (!err) {
-            try {
-                const findUser = await User.findOne({ email });
-                if (!findUser) {
-                    password = await bcrypt.hash(password, 12);
-                    const user = await User.create({ username, password, email });
-                    const token = generateToken(user)
-                    return res.json({ message: 'User created!', data: { user, token } });
-                }
-                return res.json({ message: "User Already Exists" })
-            } catch (error) {
-                console.log(error)
-                return res.json({ message: "User not created" })
+        if (err) return res.json({
+            message: err
+        })
+
+        try {
+            const findUser = await User.findOne({ email });
+            if (!findUser) {
+                password = await bcrypt.hash(password, 12);
+                const user = await User.create({ username, password, email });
+                const token = generateToken(user)
+                return res.json({ message: 'User created!', data: { user, token } });
             }
-        }
-        else {
-            return res.json({ message: err })
+            return res.json({ message: "User Already Exists" })
+        } catch (error) {
+            return res.json({ message: "User not created" })
         }
     });
 
@@ -58,24 +57,23 @@ users
     .post(async (req, res) => {
         const { email, password } = req.body;
         const err = validLoginInput(email, password);
-        if (!err) {
-            try {
-                const findUser = await User.findOne({ email });
-                if (findUser) {
-                    const user = await bcrypt.compareSync(password, findUser.password);
-                    if (!user) {
-                        return res.json({ message: "Please Enter Valid Email or Password" })
-                    }
-                    const token = generateToken(findUser);
-                    return res.json({ message: "User Login successfull", data: { findUser, token } })
+
+        if (err) return res.json({
+            message: err
+        })
+        try {
+            const findUser = await User.findOne({ email });
+            if (findUser) {
+                const user = await bcrypt.compareSync(password, findUser.password);
+                if (!user) {
+                    return res.json({ message: "Please Enter Valid Email or Password" })
                 }
-                return res.json({ message: "User does not exist" })
-            } catch (error) {
-                return res.json({ message: "Please Try Again" })
+                const token = generateToken(findUser);
+                return res.json({ message: "User Login successfull", data: { findUser, token } })
             }
-        }
-        else {
-            return res.json({ message: err })
+            return res.json({ message: "User does not exist" })
+        } catch (error) {
+            return res.json({ message: "Please Try Again" })
         }
     })
 
@@ -84,35 +82,32 @@ users
     .put(validateToken, async (req, res) => {
         let { oldPassword, newPassword } = req.body;
         const err = validChangePasswordInput(oldPassword, newPassword);
-        if (!err) {
-            try {
-                const userId = req.decoded;
-                if (userId) {
+        if (err) return res.json({
+            message: err
+        })
 
-                    const findUser = await User.findById(userId.id);
-                    const match = bcrypt.compareSync(oldPassword, findUser.password);
-                    if (!match) return res.json({
-                        message: "Please Enter Correct password"
-                    })
+        try {
+            const userId = req.decoded;
+            if (userId) {
 
-                    await User.findByIdAndUpdate(userId.id, {
-                        password: await bcrypt.hash(newPassword, 12)
-                    }, {
-                        useFindAndModify: false,
-                    })
+                const findUser = await User.findById(userId.id);
+                const match = bcrypt.compareSync(oldPassword, findUser.password);
+                if (!match) return res.json({
+                    message: "Please Enter Correct password"
+                })
 
-                    return res.json({
-                        message: "Password Updated Successfully"
-                    })
-                }
-            } catch (error) {
-                res.json("Authentication Error")
+                await User.findByIdAndUpdate(userId.id, {
+                    password: await bcrypt.hash(newPassword, 12)
+                }, {
+                    useFindAndModify: false,
+                })
+
+                return res.json({
+                    message: "Password Updated Successfully"
+                })
             }
-        }
-        else {
-            res.json({
-                message: err
-            })
+        } catch (error) {
+            res.json("Authentication Error")
         }
     })
 
@@ -121,32 +116,29 @@ users
     .post(async (req, res) => {
         let { email } = req.body;
         const err = validResetPasswordInput(email);
-        if (!err) {
-            try {
-                const findUser = await User.findOne({ email });
-                if (findUser) {
-                    const token = crypto.randomBytes(20).toString('hex');
-                    await findUser.updateOne({
-                        resetPasswordToken: token,
-                        resetPasswordExpires: Date.now() + 60000,
-                    })
-                    const info = await mailSender(email, token);
-                    return res.json({
-                        message: "Recovery Mail Sent"
-                    })
-                }
-                return res.json({
-                    message: "User Does not Exist"
+
+        if (err) return res.json({
+            message: err
+        })
+        try {
+            const findUser = await User.findOne({ email });
+            if (findUser) {
+                const token = crypto.randomBytes(20).toString('hex');
+                await findUser.updateOne({
+                    resetPasswordToken: token,
+                    resetPasswordExpires: Date.now() + 60000,
                 })
-            } catch (error) {
-                res.json({
-                    message: "Please Try Again"
+                const info = await mailSender(email, token);
+                return res.json({
+                    message: "Recovery Mail Sent"
                 })
             }
-        }
-        else {
+            return res.json({
+                message: "User Does not Exist"
+            })
+        } catch (error) {
             res.json({
-                message: err
+                message: "Please Try Again"
             })
         }
     })
@@ -158,38 +150,34 @@ users
         const { newPassword } = req.body;
 
         const err = validChangePasswordInput(newPassword);
-        if (!err) {
-            try {
-                const user = await User.findOne({
-                    resetPasswordToken: token,
-                    resetPasswordExpires: {
-                        $gt: Date.now()
-                    }
-                })
 
-                if (user) {
-                    await user.updateOne({
-                        password: await bcrypt.hash(newPassword, 12)
-                    })
-                    return res.json({
-                        message: "Password Reset Successfully !"
-                    })
+        if (err) return res.json({
+            message: err
+        })
+        try {
+            const user = await User.findOne({
+                resetPasswordToken: token,
+                resetPasswordExpires: {
+                    $gt: Date.now()
                 }
-                return res.json({
-                    message: "Link has been expired !"
+            })
+
+            if (user) {
+                await user.updateOne({
+                    password: await bcrypt.hash(newPassword, 12)
                 })
-            } catch (error) {
-                res.json({
-                    message: "Please Try Again"
+                return res.json({
+                    message: "Password Reset Successfully !"
                 })
             }
-        }
-        else {
+            return res.json({
+                message: "Link has been expired !"
+            })
+        } catch (error) {
             res.json({
-                message: err
+                message: "Please Try Again"
             })
         }
-
     })
 
 module.exports = users;
