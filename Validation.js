@@ -71,3 +71,21 @@ module.exports.validResetPasswordInput = (email) => {
         return errors
     }
 }
+
+
+module.exports.validChangePasswordInput = (newPassword) => {
+    let errors;
+    const userSchema = Joi.object().keys({
+        newPassword: Joi.string().min(6).required().strict()
+    });
+
+    const { value, error } = userSchema.validate({ newPassword }, { abortEarly: false })
+    if (error) {
+        errors = error.details.message;
+        return errors
+    }
+    else {
+        errors = null;
+        return errors
+    }
+}

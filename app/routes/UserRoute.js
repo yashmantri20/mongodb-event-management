@@ -7,6 +7,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const crypto = require('crypto');
+const { mailSender } = require('../../utils/mailSender');
+const { json } = require('body-parser');
 
 var users = express.Router();
 
@@ -119,6 +121,74 @@ users
     .post(async (req, res) => {
         let { email } = req.body;
         const err = validResetPasswordInput(email);
+        if (!err) {
+            try {
+                const findUser = await User.findOne({ email });
+                if (findUser) {
+                    const token = crypto.randomBytes(20).toString('hex');
+                    await findUser.updateOne({
+                        resetPasswordToken: token,
+                        resetPasswordExpires: Date.now() + 60000,
+                    })
+                    const info = await mailSender(email, token);
+                    return res.json({
+                        message: "Recovery Mail Sent"
+                    })
+                }
+                return res.json({
+                    message: "User Does not Exist"
+                })
+            } catch (error) {
+                res.json({
+                    message: "Please Try Again"
+                })
+            }
+        }
+        else {
+            res.json({
+                message: err
+            })
+        }
+    })
+
+users
+    .route('/change/:token')
+    .put(async (req, res) => {
+        const { token } = req.params;
+        const { newPassword } = req.body;
+
+        const err = validChangePasswordInput(newPassword);
+        if (!err) {
+            try {
+                const user = await User.findOne({
+                    resetPasswordToken: token,
+                    resetPasswordExpires: {
+                        $gt: Date.now()
+                    }
+                })
+
+                if (user) {
+                    await user.updateOne({
+                        password: await bcrypt.hash(newPassword, 12)
+                    })
+                    return res.json({
+                        message: "Password Reset Successfully !"
+                    })
+                }
+                return res.json({
+                    message: "Link has been expired !"
+                })
+            } catch (error) {
+                res.json({
+                    message: "Please Try Again"
+                })
+            }
+        }
+        else {
+            res.json({
+                message: err
+            })
+        }
 
     })
 

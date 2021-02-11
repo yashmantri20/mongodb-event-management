@@ -21,7 +21,7 @@ mongoose
         console.log(err)
     });
 
-app.use('/users', userRouter);
+app.use('/user', userRouter);
 
 
 app.listen(port, () => {

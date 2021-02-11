@@ -18,6 +18,14 @@ var userSchema = new Schema({
         minlength: 6,
         trim: true,
     },
+    resetPasswordToken: {
+        type: String,
+        default: "",
+    },
+    resetPasswordExpires: {
+        type: String,
+        default: "",
+    }
 }, {
     timestamps: true,
 });

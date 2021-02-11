@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 
-const mailSender = async (userEmail, randomPassword, username) => {
-    const mailHTML = `
+const mailSender = async (userEmail, token) => {
+  const mailHTML = `
   <body style="background-color: black">
   <div style="margin-left: auto; margin-right: auto; width: 60rem">
     <h1 style="color: #ffe369; text-align: center; font-size: 50px">
@@ -22,36 +22,33 @@ const mailSender = async (userEmail, randomPassword, username) => {
           padding: 30px;
         "
       >
-        <h1>${username},</h1>
-        <h1>
-          <em>Your New Mood Enhancer Password is :-</em>
-          <b> ${randomPassword}</b>
-        </h1>
+        <h1>http://localhost:5000/user/change/${token}</h1>
       </div>
     </div>
   </div>
 </body>
 `;
 
-    //Step 1
-    let transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            user: process.env.EMAIL,
-            pass: process.env.PASSWORD,
-        },
-    });
 
-    // Step 2
-    let mailOptions = {
-        from: process.env.EMAIL,
-        to: userEmail,
-        subject: "Reset Password",
-        text: "Reset Password",
-        html: mailHTML,
-    };
-    const info = await transporter.sendMail(mailOptions);
-    return info;
+  //Step 1
+  let transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.PASSWORD,
+    },
+  });
+
+  // Step 2
+  let mailOptions = {
+    from: process.env.EMAIL,
+    to: userEmail,
+    subject: "Reset Password",
+    text: "Reset Password",
+    html: mailHTML,
+  };
+  const info = await transporter.sendMail(mailOptions);
+  return info;
 };
 
 module.exports = { mailSender };
