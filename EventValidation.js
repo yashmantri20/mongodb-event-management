@@ -1,12 +1,14 @@
 const Joi = require('joi');
 
-module.exports.validEventCreated = (eventName) => {
+module.exports.validEventCreated = (eventName, description, date) => {
     let errors;
     const eventSchema = Joi.object().keys({
         eventName: Joi.string().min(3).required(),
+        description: Joi.string().min(10).required(),
+        date: Joi.string().isoDate().required(),
     });
 
-    const { value, error } = eventSchema.validate({ eventName }, { abortEarly: false })
+    const { value, error } = eventSchema.validate({ eventName, description, date }, { abortEarly: false })
     if (error) {
         errors = error.details.map(e => e.message)
         return errors

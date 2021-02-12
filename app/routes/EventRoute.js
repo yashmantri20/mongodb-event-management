@@ -1,6 +1,7 @@
 const express = require('express');
 const { validateToken } = require('../../auth');
 const { validEventCreated, validInviteInput } = require('../../EventValidation');
+const { paginatedResult } = require('../../utils/pagination');
 
 const Event = require('../models/Event');
 const User = require('../models/User');
@@ -10,8 +11,8 @@ var events = express.Router();
 events
     .route('/createEvent')
     .post(validateToken, async (req, res) => {
-        const { eventName } = req.body;
-        const err = validEventCreated(eventName);
+        const { eventName, description, date } = req.body;
+        const err = validEventCreated(eventName, description, date);
 
         if (err) return res.json({
             message: err
@@ -20,7 +21,7 @@ events
         try {
             const userId = req.decoded;
             const findUser = await User.findById(userId.id);
-            const event = await Event.create({ eventName, createdBy: findUser.username });
+            const event = await Event.create({ eventName, description, date, createdBy: findUser.username });
             findUser.eventsCreated.push(event);
             await findUser.save();
             res.json({
@@ -32,14 +33,15 @@ events
                 message: "Please Try Again"
             })
         }
-
     })
 
 events
-    .route('/:userId/createdEvents')
-    .get(validateToken, async (req, res) => {
+    .route('/createdEvents')
+    .get(validateToken, paginatedResult(Event), async (req, res) => {
         try {
-            const findUser = await User.findById(req.params.userId).populate('eventsCreated');
+            const user = req.decoded;
+            const findUser = await User.findById(user.id).populate('eventsCreated');
+
             return res.json({
                 message: "All Events",
                 events: findUser.eventsCreated
@@ -97,14 +99,11 @@ events
     })
 
 events
-    .route('/:userId/invitedEvents')
+    .route('/invitedEvents')
     .get(validateToken, async (req, res) => {
         try {
-            id = req.decoded;
-            if (id.id !== req.params.userId) return res.json({
-                message: "You are not allowed to peep in others event"
-            })
-            const findUser = await User.findById(req.params.userId);
+            const user = req.decoded;
+            const findUser = await User.findById(user.id);
             return res.json({
                 message: "All Events",
                 events: findUser.eventsInvited
@@ -132,8 +131,8 @@ events
 events
     .route('/:eventId/updateEvent')
     .put(validateToken, async (req, res) => {
-        const { eventName } = req.body;
-        const err = validEventCreated(eventName);
+        const { eventName, description, date } = req.body;
+        const err = validEventCreated(eventName, description, date);
 
         if (err) return res.json({
             message: err
@@ -143,7 +142,7 @@ events
             const userId = req.decoded;
             const event = await Event.findById(req.params.eventId);
 
-            await event.updateOne({ eventName });
+            await event.updateOne({ eventName, description, date });
             res.json({
                 message: "Event Updated",
                 data: event
@@ -154,6 +153,6 @@ events
                 message: "Please Try Again"
             })
         }
-
     })
+
 module.exports = events;

@@ -24,7 +24,6 @@ mongoose
     });
 
 app.use('/user', userRouter);
-
 app.use('/event', eventRouter);
 
 
